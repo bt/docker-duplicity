@@ -20,8 +20,6 @@ RUN set -ex; \
 # alpine doesn't require explicit locale-file generation
 ENV LANG en_US.utf8
 
-RUN mkdir /docker-entrypoint-initdb.d
-
 ENV PG_MAJOR 11
 ENV PG_VERSION 11beta3
 ENV PG_SHA256 82babba086ea7297d78f3ce2298296cd22fc1bb10ba315e8b4ff661658a8044d
@@ -70,8 +68,6 @@ RUN set -ex \
 		icu-dev \
 	\
 	&& cd /usr/src/postgresql \
-# update "DEFAULT_PGSOCKET_DIR" to "/var/run/postgresql" (matching Debian)
-# see https://anonscm.debian.org/git/pkg-postgresql/postgresql.git/tree/debian/patches/51-default-sockets-in-var.patch?id=8b539fcb3e093a521c095e70bdfa76887217b89f
 	&& awk '$1 == "#define" && $2 == "DEFAULT_PGSOCKET_DIR" && $3 == "\"/tmp\"" { $3 = "\"/var/run/postgresql\""; print; next } { print }' src/include/pg_config_manual.h > src/include/pg_config_manual.h.new \
 	&& grep '/var/run/postgresql' src/include/pg_config_manual.h.new \
 	&& mv src/include/pg_config_manual.h.new src/include/pg_config_manual.h \
@@ -125,6 +121,13 @@ RUN set -ex \
 		$runDeps \
 		bash \
 		su-exec \
+	&& apk del .fetch-deps .build-deps \
+	&& cd / \
+	&& rm -rf \
+		/usr/src/postgresql \
+		/usr/local/share/doc \
+		/usr/local/share/man \
+	&& find /usr/local -name '*.a' -delete
         
 ## END
         
